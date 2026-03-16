@@ -55,3 +55,43 @@ Một hệ thống **hướng dẫn du lịch bằng âm thanh thời gian thự
 │  Port 5173   │
 └──────────────┘
 ```
+
+## 🛠️ Công nghệ sử dụng
+
+### Ứng dụng Mobile (Android)
+- **.NET MAUI 9.0** — Framework mobile đa nền tảng
+- **Microsoft.Maui.Controls.Maps** — Trực quan hóa bản đồ
+- **ZXing.Net.Bindings.SkiaSharp** — Giải mã mã QR
+- **BarcodeScanning.Native.Maui** — Quét mã QR dựa trên máy ảnh
+- **SQLite-net** — Cơ sở dữ liệu cục bộ để hỗ trợ ngoại tuyến
+- **CommunityToolkit.MVVM** — Triển khai mẫu MVVM
+
+### Máy chủ API
+- **ASP.NET Core 8.0** — Back-end RESTful (tránh lỗi CLR .NET 9 trên một số CPU Intel cũ)
+- **Entity Framework Core** — ORM cho hoạt động cơ sở dữ liệu
+- **SQLite** — Lưu trữ bền vững nhẹ
+- **Swagger/OpenAPI** — Tài liệu API tự động
+
+### CMS Web
+- **React 18** — Framework giao diện người dùng
+- **Vite** — Công cụ xây dựng nhanh và máy chủ phát triển
+- **Axios** — HTTP Client cho các cuộc gọi API
+- **Recharts** — Trực quan hóa dữ liệu & bản đồ nhiệt
+- **Tailwind CSS** — Tạo kiểu dáng
+
+### Triển khai
+- **Ngrok** — Đường hầm an toàn để truy cập bên ngoài (tùy chọn)
+
+
+## 📡 Các điểm cuối API
+
+| Phương thức | Điểm cuối | Mục đích |
+|--------|----------|---------|
+| GET | `/api/pois` | Lấy tất cả điểm tham quan |
+| GET | `/api/pois/{id}` | Lấy POI cụ thể |
+| GET | `/api/tours` | Lấy tất cả tour |
+| GET | `/api/tours/{id}` | Lấy tour cụ thể với POI |
+| POST | `/api/narration-logs` | Ghi nhật ký phát thuyết minh |
+| POST | `/api/location-logs` | Ghi nhật ký vị trí người dùng |
+| GET | `/api/analytics/dashboard` | Lấy tóm tắt phân tích |
+| GET | `/api/analytics/heatmapData` | Lấy tọa độ bản đồ nhiệt |
