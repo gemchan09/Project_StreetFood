@@ -95,3 +95,70 @@ Một hệ thống **hướng dẫn du lịch bằng âm thanh thời gian thự
 | POST | `/api/location-logs` | Ghi nhật ký vị trí người dùng |
 | GET | `/api/analytics/dashboard` | Lấy tóm tắt phân tích |
 | GET | `/api/analytics/heatmapData` | Lấy tọa độ bản đồ nhiệt |
+
+## 🎯 Các trang & thành phần chính
+
+### Ứng dụng Mobile (MAUI)
+- **TourSelectionPage** — Chọn tour hoặc xem tất cả POI
+- **MainPage (Bản đồ)** — Bản đồ tương tác với theo dõi GPS
+- **QrScanPage** — Quét mã QR dựa trên máy ảnh
+- **ImageViewerPage** — Xem ảnh POI toàn màn hình
+- **SearchPage** — Tìm POI với các bộ lọc
+
+### CMS (React)
+- **Bảng điều khiển** — Tổng quan phân tích với bản đồ nhiệt
+- **Quản lý POI** — Hoạt động CRUD cho các điểm tham quan
+- **Quản lý Tour** — Tạo & tổ chức các tour
+- **Tạo mã QR** — Tạo mã QR cho POI
+
+## 🔧 Cấu hình
+
+### Cài đặt ứng dụng (API)
+- Kết nối cơ sở dữ liệu: `appsettings.json`
+- Cổng mặc định: `5000`
+- Dữ liệu seed tạo 6 POI ở Quận 1, TP.HCM
+
+### Cấu hình Emulator
+Để hỗ trợ âm thanh, đảm bảo `~/.android/avd/Pixel_5.avd/config.ini` chứa:
+```ini
+hw.audioInput=yes
+hw.audioOutput=yes
+```
+
+### Môi trường CMS (`.env`)
+```
+VITE_API_URL=http://localhost:5000
+```
+
+Để truy cập Ngrok, cập nhật URL đường hầm Ngrok.
+
+## 🌐 Truy cập từ xa (Ngrok)
+
+Chia sẻ ứng dụng & CMS qua internet mà không cần chuyển tiếp cổng:
+
+```bash
+# Terminal 1: CMS trên cổng 5173
+ngrok http 5173
+# → Nhận URL công khai như https://abc123.ngrok.io
+
+# Terminal 2: API trên cổng 5000
+ngrok http 5000
+# → Nhận URL công khai như https://xyz789.ngrok.io
+```
+
+Cập nhật CMS `.env` với URL API Ngrok. Xem [CMS_NGROK_GUIDE.md](CMS_NGROK_GUIDE.md) để biết chi tiết.
+
+## 📊 Lược đồ cơ sở dữ liệu
+
+**PointsOfInterest** (Các điểm tham quan)
+- `id`, `name`, `latitude`, `longitude`, `radius`, `description`, `narrative`, `imageUrl`, `tourId`
+
+**Tours** (Các tour)
+- `id`, `name`, `description`, `isActive`
+
+**NarrationLogs** (Nhật ký thuyết minh)
+- `id`, `poiId`, `sessionId`, `timestamp`, `duration`
+
+**LocationLogs** (Nhật ký vị trí)
+- `id`, `latitude`, `longitude`, `sessionId`, `timestamp` (theo dõi ẩn danh)
+
