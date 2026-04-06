@@ -1,0 +1,47 @@
+
+1.	GPS Tracking theo thời gian thực
+•	Lấy vị trí người dùng liên tục (foreground + background)
+•	Tối ưu độ chính xác
+1.	Thuyết minh tự động
+•	File Audio thu sẵn
+	o	Giọng tự nhiên, chuyên nghiệp
+	o	Chất lượng cao nhưng nặng dữ liệu
+•	App cần:
+	o	Quản lý hàng chờ audio
+	o	Không phát trùng lặp
+	o	Tự dừng khi có thông báo khác
+1.	Geofence / Kích hoạt điểm thuyết minh
+•	Thiết lập điểm POI (Point of Interest) với:
+	o	Tọa độ (lat/lng)
+	o	Bán kính kích hoạt
+	o	Mức ưu tiên
+•	Tự động phát nội dung khi người dùng:(đơn gian đê demo)
+	o	Đi vào vùng
+	o	Đến gần điểm
+•	Có thể chống spam bằng debounce & cooldown
+2. Hệ thống quản trị nội dung (CMS)
+•	Tạo trang web quản lý:
+	o	POI
+	o	Audio
+	o	Bản dịch
+	o	Lịch sử sử dụng
+	o	Quản lý tour
+2. Phân tích dữ liệu (Analytics)
+•	Lưu tuyến di chuyển (ẩn danh)
+•	Top địa điểm được nghe nhiều nhất
+•	Thời gian trung bình nghe 1 POI
+•	Heatmap vị trí người dùng
+2. QR Code kích hoạt nội dung( feat chính)
+•	Quét là nghe ngay, không cần GPS
+Luồng hoạt động mẫu
+•	App tải danh sách POI (lat/lng, bán kính, ưu tiên, nội dung thuyết minh).
+•	Khi người dùng di chuyển, background service cập nhật vị trí.
+•	Geofence Engine xác định POI gần nhất/ưu tiên cao nhất trong bán kính -> gửi sự kiện.
+•	Narration Engine kiểm tra trạng thái (đang phát? đã phát trong X phút?) -> quyết định phát TTS/Audio.
+•	Ghi log đã phát, tránh lặp.
+
+3. Framework .NET MAUI (Android)
+•	Geofencing: Native API hoặc tự tính khoảng cách bằng Haversine rồi trigger theo ngưỡng.
+
+•	Map: Microsoft.Maui.Controls.Maps (MAUI Maps) hoặc Google Maps SDK / MapKit binding nếu cần tính năng nâng cao.
+•	Offline: SQLite (EF Core/SQLite-net) + file âm thanh tải trước. Bản đồ offline có thể cần SDK bên thứ 3 (ví dụ Mapbox, Here) nếu muốn cache/offline mapping thật sự.
