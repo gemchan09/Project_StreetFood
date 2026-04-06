@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <title>Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * { margin: 0; padding: 0; }
+        html, body, #map { width: 100%; height: 100%; }
+        
+        .user-marker {
+            width: 16px; height: 16px;
+            background: #4285F4; border: 3px solid white;
+            border-radius: 50%; box-shadow: 0 0 6px rgba(0,0,0,0.4);
+        }
+        
+        .poi-popup h3 { margin: 0 0 4px 0; font-size: 14px; color: #333; }
+        .poi-popup p { margin: 0 0 8px 0; font-size: 12px; color: #666; }
+        .poi-popup button {
+            background: #4285F4; color: white; border: none;
+            padding: 6px 16px; border-radius: 6px; font-size: 13px;
+            cursor: pointer; width: 100%;
+        }
+        .poi-popup button:active { background: #3367D6; }
+        
+        /* Map Controls */
+        .map-controls {
+            position: absolute;
+            right: 12px;
+            top: 12px;
+            z-index: 400;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .map-btn {
+            width: 44px;
+            height: 44px;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+        
+        .map-btn:active {
+            background: #f0f0f0;
+            border-color: #4285F4;
+        }
+        
+        .map-btn:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        .distance-display {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            z-index: 400;
+            background: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #666;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            min-width: 100px;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    
+    <!-- Map Controls -->
+    <div class="map-controls">
+        <button class="map-btn" id="btnCenter" title="Chuyển đến vị trí hiện tại">📍</button>
+        <button class="map-btn" id="btnZoomIn" title="Phóng to">➕</button>
+        <button class="map-btn" id="btnZoomOut" title="Phóng nhỏ">➖</button>
+        <button class="map-btn" id="btnReset" title="Reset view">🔄</button>
+    </div>
+    
+    <!-- Distance Display -->
+    <div class="distance-display" id="distanceDisplay">📍 Sẵn sàng</div>
+    
+    <script>
+        // Initialize map centered on HCMC District 1
+        var map = L.map('map', {
+            zoomControl: false
+        }).setView([10.7769, 106.6990], 15);
+
+        // OpenStreetMap tile layer - FREE, no API key needed
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap',
+            maxZoom: 19
+        }).addTo(map);
+
+        var markers = {};
+        var circles = {};
+        var userMarker = null;
+        var userAccuracyCircle = null;
+        var currentUserLat = 10.7769;
+        var currentUserLng = 106.6990;
+        var lastNearestPoi = null;
+
+        // Setup control button listeners
+        document.getElementById('btnCenter').addEventListener('click', function() {
+            map.setView([currentUserLat, currentUserLng], Math.max(map.getZoom(), 16), { animate: true });
+            updateDistanceDisplay();
+        });
+
+        document.getElementById('btnZoomIn').addEventListener('click', function() {
+            map.zoomIn();
+        });
+
+        document.getElementById('btnZoomOut').addEventListener('click', function() {
+            map.zoomOut();
+        });
+
+        document.getElementById('btnReset').addEventListener('click', function() {
+            map.setView([10.7769, 106.6990], 15, { animate: true });
+            updateDistanceDisplay();
+        });
+
+        // Calculate distance between two points (Haversine)
+        function calculateDistance(lat1, lng1, lat2, lng2) {
+            var R = 6371000; // Earth radius in meters
+            var φ1 = lat1 * Math.PI / 180;
+            var φ2 = lat2 * Math.PI / 180;
+            var Δφ = (lat2 - lat1) * Math.PI / 180;
+            var Δλ = (lng2 - lng1) * Math.PI / 180;
+
+            var a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                    Math.cos(φ1) * Math.cos(φ2) *
+                    Math.sin(Δλ/2) * Math.sin(Δλ/2);
+            var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+            return R * c;
+        }
+
+        // Update distance display and find nearest POI
+        function updateDistanceDisplay() {
+            var minDist = Infinity;
+            var nearest = null;
+
+            for (var key in markers) {
+                var marker = markers[key];
+                var latLng = marker.getLatLng();
+                var dist = calculateDistance(currentUserLat, currentUserLng, latLng.lat, latLng.lng);
+                
+                if (dist < minDist) {
+                    minDist = dist;
+                    nearest = { id: key, name: '', dist: dist };
+                }
+            }
+
+            var display = document.getElementById('distanceDisplay');
+            if (nearest && minDist < 1000) {
+                display.textContent = '📍 Gần nhất: ' + minDist.toFixed(0) + 'm';
+                display.style.color = '#4285F4';
+            } else if (minDist < Infinity) {
+                display.textContent = '📍 ' + minDist.toFixed(0) + 'm';
+                display.style.color = '#666';
+            } else {
+                display.textContent = '📍 Sẵn sàng';
+            }
+        }
+
+        // Add POI marker
+        function addPoi(id, name, description, lat, lng, radius, priority) {
+            // Circle for trigger radius
+            var circle = L.circle([lat, lng], {
+                radius: radius,
+                color: '#4285F4',
+                fillColor: '#4285F4',
+                fillOpacity: 0.1,
+                weight: 2,
+                opacity: 0.5
+            }).addTo(map);
+            circles[id] = circle;
+
+            // Marker
+            var marker = L.marker([lat, lng]).addTo(map);
+            var popupHtml = '<div class="poi-popup">' +
+                '<h3>' + name + '</h3>' +
+                '<p>' + (description.length > 80 ? description.substring(0, 80) + '...' : description) + '</p>' +
+                '<button onclick="onPoiClick(' + id + ')">🔊 Nghe thuyết minh</button>' +
+                '</div>';
+            marker.bindPopup(popupHtml, { maxWidth: 250 });
+            marker.on('click', function() {
+                invokeCSharp('poiSelected', id.toString());
+            });
+            markers[id] = marker;
+        }
+
+        // Update user location
+        function updateUserLocation(lat, lng, accuracy) {
+            currentUserLat = lat;
+            currentUserLng = lng;
+
+            if (userMarker) {
+                userMarker.setLatLng([lat, lng]);
+            } else {
+                var icon = L.divIcon({ className: 'user-marker', iconSize: [16, 16] });
+                userMarker = L.marker([lat, lng], { icon: icon, zIndexOffset: 1000 }).addTo(map);
+            }
+
+            if (userAccuracyCircle) {
+                userAccuracyCircle.setLatLng([lat, lng]);
+                userAccuracyCircle.setRadius(accuracy || 20);
+            } else {
+                userAccuracyCircle = L.circle([lat, lng], {
+                    radius: accuracy || 20,
+                    color: '#4285F4',
+                    fillColor: '#4285F4',
+                    fillOpacity: 0.15,
+                    weight: 1
+                }).addTo(map);
+            }
+
+            // Update distance display
+            updateDistanceDisplay();
+        }
+
+        // Center map on location
+        function centerOn(lat, lng, zoom) {
+            map.setView([lat, lng], zoom || 16);
+        }
+
+        // Highlight active POI
+        function highlightPoi(id) {
+            if (circles[id]) {
+                circles[id].setStyle({ fillColor: '#FF5722', color: '#FF5722', fillOpacity: 0.25 });
+            }
+            // Reset others
+            for (var key in circles) {
+                if (parseInt(key) !== id) {
+                    circles[key].setStyle({ fillColor: '#4285F4', color: '#4285F4', fillOpacity: 0.1 });
+                }
+            }
+        }
+
+        // Clear all POIs
+        function clearPois() {
+            for (var key in markers) { map.removeLayer(markers[key]); }
+            for (var key in circles) { map.removeLayer(circles[key]); }
+            markers = {};
+            circles = {};
+        }
+
+        // Handle POI click from popup button
+        function onPoiClick(poiId) {
+            invokeCSharp('poiNarrate', poiId.toString());
+        }
+
+        // Call C# from JavaScript
+        function invokeCSharp(action, data) {
+            try {
+                // MAUI WebView evaluates the URL change approach
+                window.location.href = 'maui://action?type=' + action + '&data=' + encodeURIComponent(data);
+            } catch(e) {}
+        }
+    </script>
+</body>
+</html>
